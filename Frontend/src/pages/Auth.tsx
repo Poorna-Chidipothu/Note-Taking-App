@@ -6,6 +6,7 @@ import logo from "/assets/logo.png";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import API_BASE_URL from "../config/api";
 
 export default function Auth() {
   const [authstate, setAuthstate] = useState<"signup" | "login">("signup");
@@ -25,9 +26,9 @@ export default function Auth() {
     setError("");
     try {
       if (authstate === "signup") {
-        await axios.post("http://localhost:4000/api/auth/signup/request-otp", { name, dob, email });
+        await axios.post(`${API_BASE_URL}/auth/signup/request-otp`, { name, dob, email });
       } else {
-        await axios.post("http://localhost:4000/api/auth/login/request-otp", { email });
+        await axios.post(`${API_BASE_URL}/auth/login/request-otp`, { email });
       }
       setOtpsent(true);
     } catch (err: any) {
@@ -42,14 +43,14 @@ export default function Auth() {
     try {
       let res;
       if (authstate === "signup") {
-        res = await axios.post("http://localhost:4000/api/auth/signup/verify-otp", {
+        res = await axios.post(`${API_BASE_URL}/auth/signup/verify-otp`, {
           email,
           code: otp,
           name,
           dob,
         });
       } else {
-        res = await axios.post("http://localhost:4000/api/auth/login/verify-otp", {
+        res = await axios.post(`${API_BASE_URL}/auth/login/verify-otp`, {
           email,
           code: otp,
           keepLoggedIn

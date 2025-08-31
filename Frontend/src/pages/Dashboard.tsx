@@ -4,6 +4,7 @@ import axios from "axios";
 import logo from "/assets/logo.png"
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import API_BASE_URL from "../config/api";
 
 interface User {
   name: string;
@@ -30,7 +31,7 @@ export default function Dashboard() {
   };
 
   const fetchNotes = async () => {
-    const res = await axios.get("http://localhost:4000/api/notes", {
+    const res = await axios.get(`${API_BASE_URL}/notes`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setNotes(res.data);
@@ -38,7 +39,7 @@ export default function Dashboard() {
 
   const addNote = async () => {
     if (!newNote.trim()) return;
-    const res = await axios.post("http://localhost:4000/api/notes", { text: newNote }, {
+    const res = await axios.post(`${API_BASE_URL}/notes`, { text: newNote }, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setNotes([...notes, res.data]);
@@ -46,7 +47,7 @@ export default function Dashboard() {
   };
 
   const deleteNote = async (id: string) => {
-    await axios.delete(`http://localhost:4000/api/notes/${id}`, {
+    await axios.delete(`${API_BASE_URL}/notes/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setNotes(notes.filter(n => n._id !== id));
