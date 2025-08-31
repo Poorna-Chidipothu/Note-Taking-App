@@ -2,7 +2,7 @@ import { Router } from "express";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User";
 import Otp from "../models/Otp";
-import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { generateLoginToken, generateToken } from "../utils/jwt";
 
@@ -21,6 +21,16 @@ if (!GOOGLE_CLIENT_ID) {
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+
+// Setup Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 // Helper: generate OTP
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit
@@ -28,6 +38,7 @@ function generateOtp(): string {
 
 // Request OTP (Signup)
 router.post("/signup/request-otp", async (req, res) => {
+  
   try {
     const { name, dob, email } = req.body;
     if (!name) return res.status(400).json({ error: "Name required" });
@@ -44,8 +55,16 @@ router.post("/signup/request-otp", async (req, res) => {
 
     await Otp.create({ email, code, expiresAt });
 
-    // TODO: send OTP via email (we’ll add nodemailer later)
-    console.log(`OTP for ${email}: ${code}`);
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your OTP Code For Sign Up in NoteApp',
+      text: `Your OTP for Sign Up is: ${code}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    // console.log(`OTP for ${email}: ${code}`);
 
     res.json({ message: "OTP sent" });
   } catch (err) {
@@ -75,11 +94,6 @@ router.post("/signup/verify-otp", async (req, res) => {
     
         // Delete OTP after use
         await Otp.deleteMany({ email });
-    
-        // Sign JWT
-        // const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-        //   expiresIn: "7d",
-        // });
 
         const token = generateToken({ userId: (user._id as any).toString(), email: user.email });
     
@@ -115,8 +129,15 @@ router.post("/login/request-otp", async (req, res) => {
       // Save OTP in DB
       await Otp.create({ email, code, expiresAt });
   
-      // TODO: Send OTP via email (or SMS). For now, return it in response (for dev).
-      console.log(`OTP for ${email}: ${code}`);
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your OTP Code For Login in NoteApp',
+        text: `Your OTP for login is: ${code}`,
+      };
+      await transporter.sendMail(mailOptions);
+
+      // console.log(`OTP for ${email}: ${code}`);
   
       return res.json({ message: "OTP sent successfully" });
     } catch (err) {
@@ -149,9 +170,6 @@ router.post("/login/request-otp", async (req, res) => {
       await Otp.deleteMany({ email });
   
       // Issue JWT
-      // const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      //   expiresIn: "7d",
-      // });
       const token = generateLoginToken({ userId: (user._id as any).toString(), email: user.email }, keepLoggedIn);
   
       return res.json({ token, user });

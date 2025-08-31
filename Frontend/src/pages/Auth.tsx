@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import axios from "axios";
 
 import sideImage from "/assets/bg.jpg";
 import logo from "/assets/logo.png";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 
 export default function Auth() {
   const [authstate, setAuthstate] = useState<"signup" | "login">("signup");
@@ -17,6 +18,7 @@ export default function Auth() {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false); 
 
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   // ---- Request OTP ----
   const requestOtp = async () => {
@@ -56,19 +58,10 @@ export default function Auth() {
 
       console.log(`${authstate} success:`, res.data);
 
-      // ✅ Save token according to "Keep me logged in"
-      if (res.data?.token) {
-        if (keepLoggedIn) {
-          localStorage.setItem("authToken", res.data.token);
-          localStorage.setItem("user", JSON.stringify(res.data.user));
-        } else {
-          sessionStorage.setItem("authToken", res.data.token);
-          sessionStorage.setItem("user", JSON.stringify(res.data.user));
-        }
+      if (res.data?.token && res.data?.user) {
+        login(res.data.user, res.data.token, keepLoggedIn);
+        navigate("/dashboard");
       }
-
-      // TODO: redirect to dashboard after login/signup
-      navigate("/dashboard");
 
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid OTP or something went wrong.");
