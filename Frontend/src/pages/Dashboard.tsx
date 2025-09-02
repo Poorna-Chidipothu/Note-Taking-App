@@ -4,6 +4,7 @@ import axios from "axios";
 import logo from "/assets/logo.png"
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import LoadingSpinner from "../components/LoadingSpinner";
 import API_BASE_URL from "../config/api";
 
 interface User {
@@ -23,7 +24,14 @@ export default function Dashboard() {
   const [newNote, setNewNote] = useState("");
 
   const navigate = useNavigate();
-  const { logout, token } = useContext(AuthContext);
+  const { logout, token, loading } = useContext(AuthContext);
+  
+  // Redirect to login if no token after loading
+  useEffect(() => {
+    if (!loading && !token) {
+      navigate("/");
+    }
+  }, [token, loading, navigate]);
   
   const handleLogout = () => {
     logout();
@@ -31,6 +39,7 @@ export default function Dashboard() {
   };
 
   const fetchNotes = async () => {
+    if (!token) return;
     const res = await axios.get(`${API_BASE_URL}/notes`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -38,7 +47,7 @@ export default function Dashboard() {
   };
 
   const addNote = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim() || !token) return;
     const res = await axios.post(`${API_BASE_URL}/notes`, { text: newNote }, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -47,6 +56,7 @@ export default function Dashboard() {
   };
 
   const deleteNote = async (id: string) => {
+    if (!token) return;
     await axios.delete(`${API_BASE_URL}/notes/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -58,10 +68,20 @@ export default function Dashboard() {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    if (token) {
+    if (token && !loading) {
       fetchNotes();
     }
-  }, [token]);
+  }, [token, loading]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return <LoadingSpinner message="Loading dashboard..." />;
+  }
+
+  // Don't render dashboard if no token
+  if (!token) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start p-6 bg-white">

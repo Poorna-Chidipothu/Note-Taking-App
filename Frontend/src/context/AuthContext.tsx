@@ -9,6 +9,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  loading: boolean;
   login: (user: User, token: string, keepLoggedIn?: boolean) => void;
   logout: () => void;
 }
@@ -16,6 +17,7 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
+  loading: true,
   login: () => {},
   logout: () => {},
 });
@@ -23,6 +25,7 @@ export const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
@@ -32,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
     }
+    setLoading(false);
   }, []);
 
   const login = (user: User, token: string, keepLoggedIn: boolean = false) => {
@@ -63,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

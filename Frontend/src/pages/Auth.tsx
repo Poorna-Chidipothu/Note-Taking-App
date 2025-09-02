@@ -1,9 +1,10 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import axios from "axios";
 
 import sideImage from "/assets/bg.jpg";
 import logo from "/assets/logo.png";
 import GoogleLoginButton from "../components/GoogleLoginButton";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import API_BASE_URL from "../config/api";
@@ -19,7 +20,19 @@ export default function Auth() {
   const [keepLoggedIn, setKeepLoggedIn] = useState(false); 
 
   const navigate = useNavigate();
-  const { login } = useContext(AuthContext);
+  const { login, token, loading } = useContext(AuthContext);
+
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    if (!loading && token) {
+      navigate("/dashboard");
+    }
+  }, [token, loading, navigate]);
+
+  // Don't render the auth form if we're loading or already authenticated
+  if (loading || token) {
+    return <LoadingSpinner message="Checking authentication..." />;
+  }
 
   // ---- Request OTP ----
   const requestOtp = async () => {
